@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* theme */
+:root {
+  /* base */
+  --bg: #0b0f14;
+  --fg: #e6f4f1;
+  --surface: #10161c;
+  --border: rgba(255, 255, 255, 0.12);
+
+  /* RED theme (Tailwind red-500 / red-700) */
+  --accent: 239 68 68; /* rgb values (red-500) */
+  --accent-600: 185 28 28; /* rgb values (red-700) */
+
+  /* global glows (used by our utility classes) */
+  --glow: rgba(var(--accent), 0.6);
+  --glow-cyan: rgba(
+    var(--accent-600),
+    0.6
+  ); /* keep name for compatibility; now red too */
+}
+
+/* Optional: tiny helpers we already use in components */
+.glow-interactive {
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.glow-interactive:hover {
+  box-shadow:
+    0 0 22px rgba(var(--accent), 0.45),
+    0 0 6px rgba(var(--accent), 0.25);
+}
+
+.glow-primary {
+  box-shadow: 0 0 28px rgba(var(--accent), 0.35);
+}
+.glow-cyan {
+  box-shadow: 0 0 28px rgba(var(--accent-600), 0.35);
+}
+
+/* gradient helper for progress bars etc. */
+.accent-gradient {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--accent), 0.95),
+    rgba(var(--accent-600), 0.95)
+  );
+}
