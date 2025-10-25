@@ -2,50 +2,190 @@
 @tailwind components;
 @tailwind utilities;
 
-/* theme */
+/* ---------- Theme (red + black) ---------- */
 :root {
-  /* base */
-  --bg: #0b0f14;
-  --fg: #e6f4f1;
-  --surface: #10161c;
-  --border: rgba(255, 255, 255, 0.12);
-
-  /* RED theme (Tailwind red-500 / red-700) */
-  --accent: 239 68 68; /* rgb values (red-500) */
-  --accent-600: 185 28 28; /* rgb values (red-700) */
-
-  /* global glows (used by our utility classes) */
-  --glow: rgba(var(--accent), 0.6);
-  --glow-cyan: rgba(
-    var(--accent-600),
-    0.6
-  ); /* keep name for compatibility; now red too */
+  --bg: 11 11 13; /* #0b0b0d */
+  --fg: 255 255 255; /* white */
+  --accent: 239 68 68; /* red-500 */
+  --accent-600: 220 38 38; /* red-600 */
+  --accent-700: 185 28 28; /* red-700 */
 }
 
-/* Optional: tiny helpers we already use in components */
-.glow-interactive {
-  transition:
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-.glow-interactive:hover {
-  box-shadow:
-    0 0 22px rgba(var(--accent), 0.45),
-    0 0 6px rgba(var(--accent), 0.25);
+html,
+body,
+:root {
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
 }
 
-.glow-primary {
-  box-shadow: 0 0 28px rgba(var(--accent), 0.35);
+/* ---------- Keyframes ---------- */
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 16px rgb(var(--accent) / 0.25);
+  }
+  50% {
+    box-shadow: 0 0 28px rgb(var(--accent) / 0.45);
+  }
 }
-.glow-cyan {
-  box-shadow: 0 0 28px rgba(var(--accent-600), 0.35);
+@keyframes sheen {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+@keyframes barBreath {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgb(var(--accent) / 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgb(var(--accent) / 0.6));
+  }
 }
 
-/* gradient helper for progress bars etc. */
-.accent-gradient {
-  background: linear-gradient(
-    90deg,
-    rgba(var(--accent), 0.95),
-    rgba(var(--accent-600), 0.95)
-  );
+/* ---------- Utilities ---------- */
+@layer utilities {
+  .bg-accent {
+    background: rgb(var(--accent));
+  }
+  .text-accent {
+    color: rgb(var(--accent));
+  }
+  .border-accent {
+    border-color: rgb(var(--accent));
+  }
+
+  .accent-gradient {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--accent)),
+      rgb(var(--accent-600)),
+      rgb(var(--accent-700))
+    );
+  }
+
+  .glow-interactive {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.25s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      opacity 0.2s ease,
+      color 0.2s ease;
+  }
+  .glow-interactive:hover {
+    transform: translateY(-1px);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 28px rgb(var(--accent) / 0.35);
+  }
+  .shadow-glow-soft {
+    box-shadow: 0 0 18px rgb(var(--accent) / 0.25);
+  }
+  .ring-accent {
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.15),
+      0 0 0 3px rgb(var(--accent) / 0.35) inset;
+  }
+}
+
+/* ---------- Components (reusable classes) ---------- */
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply relative inline-flex items-center justify-center rounded-full px-5 py-2
+border border-white/15 bg-white/10 text-white/90 glow-interactive;
+  }
+  .btn::after {
+    /* sheen sweep */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent,
+      rgb(255 255 255 / 0.18),
+      transparent
+    );
+    background-size: 200% 100%;
+    opacity: 0;
+    pointer-events: none;
+    border-radius: 9999px;
+    transition: opacity 0.25s ease;
+  }
+  .btn:hover::after {
+    opacity: 1;
+    animation: sheen 1.2s linear infinite;
+  }
+
+  .btn-accent {
+    @apply text-black;
+    background: rgb(var(--accent));
+    border-color: transparent;
+    box-shadow: 0 10px 30px rgb(var(--accent) / 0.25);
+  }
+  .btn-accent:hover {
+    background: rgb(var(--accent-600));
+  }
+  .btn-accent:active {
+    transform: translateY(0);
+  }
+
+  .btn-muted {
+    @apply bg-white/8 border-white/20 text-white/90;
+  }
+  .btn-muted:hover {
+    @apply bg-white/12;
+  }
+
+  /* Chips for filters/steps */
+  .chip {
+    @apply px-3 py-1 rounded-full text-xs border bg-white/6 border-white/15 text-white/90 glow-interactive;
+  }
+  .chip-active {
+    color: black;
+    border-color: transparent;
+    background: linear-gradient(
+      180deg,
+      rgb(var(--accent)),
+      rgb(var(--accent-600))
+    );
+    animation: glowPulse 2.2s ease-in-out infinite;
+  }
+
+  /* Progress bar */
+  .progress-rail {
+    @apply h-1 w-full rounded-full bg-white/10 overflow-hidden;
+  }
+  .progress-bar {
+    @apply h-full accent-gradient;
+    animation: barBreath 2s ease-in-out infinite;
+  }
+
+  /* Cards */
+  .card-3d {
+    @apply relative rounded-2xl border border-white/10 overflow-hidden bg-white/[.04]
+transition-transform duration-300 ease-out;
+  }
+  .card-3d:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 14px 40px rgb(0 0 0 / 0.45),
+      0 0 28px rgb(var(--accent) / 0.25);
+  }
+  .card-overlay {
+    @apply absolute inset-0 opacity-0 transition-opacity;
+    background: radial-gradient(
+      1200px 300px at 80% 110%,
+      rgb(var(--accent) / 0.25),
+      transparent 60%
+    );
+  }
+  .card-3d:hover .card-overlay {
+    @apply opacity-100;
+  }
 }

@@ -25,8 +25,7 @@ const SWATCHES = [
   { name: "Charcoal", value: "#2B2F36" },
 ];
 
-// A small set of common CSS color names for spell-check.
-// (Add more anytime.)
+// small dictionary for spell-check (extend anytime)
 const CSS_NAMES = [
   "black",
   "white",
@@ -62,11 +61,11 @@ function isValidCssColor(v: string) {
   return s.color !== "";
 }
 
-// tiny Levenshtein for “did you mean” suggestions
+// tiny Levenshtein for suggestions
 function lev(a: string, b: string) {
   const m = a.length,
     n = b.length;
-  const dp = Array.from({ length: m + 1 }, (_, i) => new Array(n + 1).fill(0));
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
   for (let i = 0; i <= m; i++) dp[i][0] = i;
   for (let j = 0; j <= n; j++) dp[0][j] = j;
   for (let i = 1; i <= m; i++) {
@@ -89,7 +88,6 @@ export default function CustomPage() {
   const [file, setFile] = useState<File | null>(null);
   const [fileErr, setFileErr] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const colorPickerRef = useRef<HTMLInputElement>(null);
   const previewURL = useMemo(
     () => (file ? URL.createObjectURL(file) : ""),
     [file]
@@ -102,25 +100,12 @@ export default function CustomPage() {
   const [width, setWidth] = useState("");
 
   // Wall color
-  const [color, setColor] = useState("#ffffff"); // used by overlay
-  const [colorInput, setColorInput] = useState<string>(color); // what user types/sees
+  const [color, setColor] = useState("#ffffff"); // overlay color actually used
+  const [colorInput, setColorInput] = useState<string>(color); // what user types
   const [colorValid, setColorValid] = useState<boolean>(true);
-
-  // Notes
   const [notes, setNotes] = useState<string>("");
 
   // Step 3 — contact
-
-  // Submit
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const [err, setErr] = useState("");
-
-  // Delete confirm (preview)
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  // Step 3 — contact
-
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -138,25 +123,22 @@ export default function CustomPage() {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = e.target.value.replace(/[^A-Za-z\s]/g, ""); // block numbers/symbols
+    const v = e.target.value.replace(/[^A-Za-z\s]/g, "");
     setName(v);
     setNameErr(
       v && !nameRe.test(v.trim()) ? "Use letters & spaces only (min 2)." : ""
     );
   }
-
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = e.target.value.replace(/\D/g, ""); // digits only
+    const v = e.target.value.replace(/\D/g, "");
     setPhone(v);
     setPhoneErr(v && !phoneRe.test(v) ? "Enter 10 digits." : "");
   }
-
   function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
     const v = e.target.value.trim();
     setEmail(v);
     setEmailErr(v && !emailRe.test(v) ? "Enter a valid email." : "");
   }
-
   function handleAddressChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const v = e.target.value;
     setAddress(v);
@@ -164,7 +146,6 @@ export default function CustomPage() {
       v && v.trim().length < 5 ? "Please enter a complete address." : ""
     );
   }
-
   function validateContact() {
     let ok = true;
     if (!nameRe.test(name.trim())) {
@@ -172,7 +153,7 @@ export default function CustomPage() {
       ok = false;
     }
     if (!phoneRe.test(phone)) {
-      setPhoneErr("Phone required: 10–15 digits.");
+      setPhoneErr("Phone required: 10 digits.");
       ok = false;
     }
     if (!emailRe.test(email)) {
@@ -185,6 +166,14 @@ export default function CustomPage() {
     }
     return ok;
   }
+
+  // Delete confirm (preview)
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Submit
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState("");
 
   // File handlers
   function validateAndSet(f?: File) {
@@ -223,24 +212,21 @@ export default function CustomPage() {
   function onColorInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const v = e.target.value.trim();
     setColorInput(v);
-    const ok = v === "" || isValidCssColor(v); // optional; empty is OK
+    const ok = v === "" || isValidCssColor(v); // empty allowed
     setColorValid(ok);
     if (ok && v) setColor(v);
   }
 
-  // Generate “did you mean” list when invalid
+  // Ranked suggestions
   const colorSuggestions = useMemo(() => {
     const v = colorInput.trim().toLowerCase();
     if (!v || isValidCssColor(colorInput)) return [];
-    // rank by Levenshtein and substring weight
     const scored = CSS_NAMES.map((name) => {
-      const score = lev(v, name);
-      const bonus = name.includes(v) ? -2 : 0; // prefer substring matches
-      return { name, score: score + bonus };
+      const score = lev(v, name) + (name.includes(v) ? -2 : 0);
+      return { name, score };
     }).sort((a, b) => a.score - b.score);
-    // return top 3 unique suggestions
-    const seen = new Set<string>();
     const out: string[] = [];
+    const seen = new Set<string>();
     for (const s of scored) {
       if (!seen.has(s.name)) {
         out.push(s.name);
@@ -275,8 +261,6 @@ export default function CustomPage() {
       fd.set("color", color);
       fd.set("colorName", colorInput);
       fd.set("notes", notes);
-
-      // NEW fields
       fd.set("name", name);
       fd.set("phone", phone);
       fd.set("email", email);
@@ -309,7 +293,7 @@ export default function CustomPage() {
         <nav className="hidden md:flex gap-3">
           <Link
             href="/our-work"
-            className="px-4 py-2 rounded-full bg-white/10 border border-white/15 hover:bg-white/14 glow-interactive glow-cyan"
+            className="px-4 py-2 rounded-full bg-white/10 border border-white/15 hover:bg-white/14"
           >
             Our Work
           </Link>
@@ -344,7 +328,7 @@ export default function CustomPage() {
                     key={s}
                     className={`px-3 py-1 rounded-full border transition ${
                       active
-                        ? "bg-white text-black border-transparent shadow-[0_0_24px_var(--glow)]"
+                        ? "bg-white text-black border-transparent shadow-[0_0_24px_rgba(239,68,68,.65)]"
                         : "bg-white/5 text-white border-white/15"
                     }`}
                   >
@@ -354,14 +338,11 @@ export default function CustomPage() {
               })}
             </div>
 
-            {/* Progress bar */}
-            <div className="h-1 w-full rounded-full bg-white/10 mb-4 overflow-hidden">
+            {/* Progress bar (hard-coded red gradient + glow) */}
+            <div className="progress-rail mb-4">
               <div
-                className="h-full bg-[linear-gradient(90deg,rgba(182,255,90,.9),rgba(125,249,255,.9))]"
-                style={{
-                  width: `${(step / 3) * 100}%`,
-                  transition: "width .4s ease",
-                }}
+                className="progress-bar"
+                style={{ width: `${(step / 3) * 100}%` }}
               />
             </div>
 
@@ -372,8 +353,7 @@ export default function CustomPage() {
                   {/* Preview (contained, scrollable) */}
                   <div className="flex-1">
                     <div
-                      className="relative h-[300px] sm:h-[360px] md:h-[420px] rounded-2xl border border-white/10 bg-white/5
-overflow-auto p-2 overscroll-contain"
+                      className="relative h-[300px] sm:h-[360px] md:h-[420px] rounded-2xl border border-white/10 bg-white/5 overflow-auto p-2 overscroll-contain"
                       style={{ scrollbarGutter: "stable both-edges" }}
                     >
                       {/* Delete + confirm */}
@@ -384,8 +364,7 @@ overflow-auto p-2 overscroll-contain"
                             onClick={() => setConfirmDelete((v) => !v)}
                             aria-label="Delete"
                             title="Delete"
-                            className="glow-interactive glow-cyan grid place-items-center h-9 w-9 rounded-full
-bg-black/55 hover:bg-black/70 border border-white/20 backdrop-blur-md"
+                            className="grid place-items-center h-9 w-9 rounded-full bg-black/55 hover:bg-black/70 border border-white/20 backdrop-blur-md"
                           >
                             <svg
                               width="18"
@@ -406,10 +385,11 @@ bg-black/55 hover:bg-black/70 border border-white/20 backdrop-blur-md"
                           </button>
 
                           <div
-                            className={`mt-2 origin-top-right transition-all duration-150
-${confirmDelete ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}
-rounded-xl bg-black/70 border border-white/20 backdrop-blur-md
-shadow-[0_10px_30px_rgba(0,0,0,.35)] px-3 py-2 flex items-center gap-2`}
+                            className={`mt-2 origin-top-right transition-all duration-150 ${
+                              confirmDelete
+                                ? "opacity-100 scale-100"
+                                : "opacity-0 scale-95 pointer-events-none"
+                            } rounded-xl bg-black/70 border border-white/20 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,.35)] px-3 py-2 flex items-center gap-2`}
                             style={{ minWidth: 220 }}
                           >
                             <span className="text-xs opacity-90">
@@ -428,8 +408,7 @@ shadow-[0_10px_30px_rgba(0,0,0,.35)] px-3 py-2 flex items-center gap-2`}
                                 clearFile();
                                 setConfirmDelete(false);
                               }}
-                              className="text-xs px-2 py-1 rounded-full bg-[rgb(182,255,90)] text-black hover:bg-[rgb(172,245,80)]
-glow-interactive glow-primary transition"
+                              className="text-xs px-2 py-1 rounded-full bg-[#ef4444] text-black hover:bg-[#dc2626] shadow-[0_0_18px_rgba(239,68,68,.35)] transition"
                             >
                               Delete
                             </button>
@@ -469,8 +448,7 @@ glow-interactive glow-primary transition"
                       htmlFor="uploader"
                       onDrop={onDrop}
                       onDragOver={(e) => e.preventDefault()}
-                      className="block rounded-2xl border border-white/15 bg-gradient-to-br from-white/10 via-white/5 to-white/10
-hover:from-white/12 hover:via-white/7 hover:to-white/12 transition p-4 cursor-pointer"
+                      className="block rounded-2xl border border-white/15 bg-gradient-to-br from-white/10 via-white/5 to-white/10 hover:from-white/12 hover:via-white/7 hover:to-white/12 transition p-4 cursor-pointer"
                     >
                       <div className="text-sm font-medium mb-1">
                         Choose image
@@ -502,15 +480,14 @@ hover:from-white/12 hover:via-white/7 hover:to-white/12 transition p-4 cursor-po
                     <div className="mt-4 flex gap-2">
                       <Button
                         onClick={() => fileInputRef.current?.click()}
-                        className="rounded-full bg-white text-black hover:bg-white/90 shadow-[0_0_18px_rgba(255,255,255,.15)] glow-interactive glow-primary"
+                        className="rounded-full bg-white text-black hover:bg-white/90 shadow-[0_0_18px_rgba(255,255,255,.15)]"
                       >
                         Choose
                       </Button>
                       <Button
                         disabled={!file}
                         onClick={() => setStep(2)}
-                        className="rounded-full bg-[rgb(182,255,90)] text-black hover:bg-[rgb(172,245,80)]
-shadow-[0_0_28px_rgba(182,255,90,.35)] disabled:opacity-40 disabled:cursor-not-allowed glow-interactive glow-primary"
+                        className="rounded-full bg-[#ef4444] text-black hover:bg-[#dc2626] shadow-[0_0_28px_rgba(239,68,68,.35)] disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Next
                       </Button>
@@ -536,10 +513,10 @@ shadow-[0_0_28px_rgba(182,255,90,.35)] disabled:opacity-40 disabled:cursor-not-a
                               key={t}
                               type="button"
                               onClick={() => setSurfaceType(t)}
-                              className={`px-4 py-2 rounded-full border text-sm transition glow-interactive ${
+                              className={`px-4 py-2 rounded-full border text-sm transition ${
                                 active
-                                  ? "glow-primary bg-white text-black border-transparent shadow-[0_0_22px_rgba(255,255,255,.25)]"
-                                  : "glow-cyan bg-white/8 text-white border-white/20 hover:bg-white/12"
+                                  ? "bg-white text-black border-transparent shadow-[0_0_22px_rgba(239,68,68,.35)]"
+                                  : "bg-white/8 text-white border-white/20 hover:bg-white/12"
                               }`}
                               aria-pressed={active}
                             >
@@ -608,6 +585,7 @@ shadow-[0_0_28px_rgba(182,255,90,.35)] disabled:opacity-40 disabled:cursor-not-a
                     </div>
                   </div>
 
+                  {/* Wall color */}
                   <div className="md:col-span-2">
                     <label className="text-sm opacity-80">
                       Wall color{" "}
@@ -616,7 +594,7 @@ shadow-[0_0_28px_rgba(182,255,90,.35)] disabled:opacity-40 disabled:cursor-not-a
                       </span>
                     </label>
 
-                    {/* Preset swatches */}
+                    {/* Swatches */}
                     <div className="mt-2 flex flex-wrap gap-2">
                       {SWATCHES.map((s) => {
                         const active =
@@ -630,8 +608,11 @@ shadow-[0_0_28px_rgba(182,255,90,.35)] disabled:opacity-40 disabled:cursor-not-a
                               setColorInput(s.name);
                               setColorValid(true);
                             }}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs transition
-${active ? "bg-white text-black border-transparent" : "bg-white/8 text-white border-white/20 hover:bg-white/12"}`}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs transition ${
+                              active
+                                ? "bg-white text-black border-transparent"
+                                : "bg-white/8 text-white border-white/20 hover:bg-white/12"
+                            }`}
                             title={s.name}
                           >
                             <span
@@ -644,7 +625,7 @@ ${active ? "bg-white text-black border-transparent" : "bg-white/8 text-white bor
                       })}
                     </div>
 
-                    {/* Text input + the ONLY live swatch */}
+                    {/* ONE live swatch + text input */}
                     <div className="mt-3 flex items-center gap-3">
                       <div
                         className="h-7 w-7 rounded-md border border-white/30 shadow-inner"
@@ -662,13 +643,7 @@ ${active ? "bg-white text-black border-transparent" : "bg-white/8 text-white bor
                       <input
                         type="text"
                         value={colorInput}
-                        onChange={(e) => {
-                          const v = e.target.value.trim();
-                          setColorInput(v);
-                          const ok = v === "" || isValidCssColor(v);
-                          setColorValid(ok);
-                          if (ok && v) setColor(v);
-                        }}
+                        onChange={onColorInputChange}
                         placeholder="Try: black, skyblue, #ff8800, rgb(0 0 0)"
                         className={`flex-1 rounded-xl bg-white/10 border px-3 py-2 text-sm placeholder:text-white/60 ${
                           colorValid ? "border-white/20" : "border-red-400"
@@ -677,27 +652,25 @@ ${active ? "bg-white text-black border-transparent" : "bg-white/8 text-white bor
                       />
                     </div>
 
-                    {/* “Did you mean” suggestions (appear only when misspelled) */}
-                    {!colorValid && (
+                    {/* Suggest when misspelled */}
+                    {!colorValid && colorSuggestions.length > 0 && (
                       <div className="mt-2 text-xs flex items-center gap-2">
                         <span className="opacity-80">Did you mean:</span>
                         <div className="flex flex-wrap gap-2">
-                          {CSS_NAMES.sort((a, b) => a.localeCompare(b))
-                            .slice(0, 3)
-                            .map((n) => (
-                              <button
-                                key={n}
-                                type="button"
-                                onClick={() => {
-                                  setColorInput(n);
-                                  setColor(n);
-                                  setColorValid(true);
-                                }}
-                                className="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/16 border border-white/20"
-                              >
-                                {n}
-                              </button>
-                            ))}
+                          {colorSuggestions.map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => {
+                                setColorInput(n);
+                                setColor(n);
+                                setColorValid(true);
+                              }}
+                              className="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/16 border border-white/20"
+                            >
+                              {n}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -721,14 +694,13 @@ ${active ? "bg-white text-black border-transparent" : "bg-white/8 text-white bor
                   <Button
                     variant="secondary"
                     onClick={() => setStep(1)}
-                    className="rounded-full border-white/25 bg-white/10 hover:bg-white/14 glow-interactive glow-cyan"
+                    className="rounded-full border-white/25 bg-white/10 hover:bg-white/14"
                   >
                     Back
                   </Button>
                   <Button
                     onClick={() => setStep(3)}
-                    className="rounded-full bg-[rgb(182,255,90)] text-black hover:bg-[rgb(172,245,80)]
-shadow-[0_0_28px_rgba(182,255,90,.35)] glow-interactive glow-primary"
+                    className="rounded-full bg-[#ef4444] text-black hover:bg-[#dc2626] shadow-[0_0_28px_rgba(239,68,68,.35)]"
                   >
                     Next
                   </Button>
@@ -806,15 +778,14 @@ shadow-[0_0_28px_rgba(182,255,90,.35)] glow-interactive glow-primary"
                   <Button
                     variant="secondary"
                     onClick={() => setStep(2)}
-                    className="rounded-full border-white/25 bg-white/10 hover:bg-white/14 glow-interactive glow-cyan"
+                    className="rounded-full border-white/25 bg-white/10 hover:bg-white/14"
                   >
                     Back
                   </Button>
                   <Button
                     disabled={submitting}
                     onClick={onSubmit}
-                    className="rounded-full bg-[rgb(182,255,90)] text-black hover:bg-[rgb(172,245,80)]
-shadow-[0_0_28px_rgba(182,255,90,.35)] disabled:opacity-40 glow-interactive glow-primary"
+                    className="rounded-full bg-[#ef4444] text-black hover:bg-[#dc2626] shadow-[0_0_28px_rgba(239,68,68,.35)] disabled:opacity-40"
                   >
                     {submitting ? "Submitting..." : "Submit"}
                   </Button>

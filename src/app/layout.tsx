@@ -1,8 +1,11 @@
 import "../styles/global.css";
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Mural 3D",
-  description: "3D wall mural studio",
+  title: "Comic Paints",
+  description: "3D wall Paints",
 };
 
 export default function RootLayout({
@@ -12,7 +15,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>
+        <div className="min-h-screen bg-zinc-950 text-white">{children}</div>
+      </body>
     </html>
   );
 }
